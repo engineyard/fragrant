@@ -31,6 +31,15 @@ class Fragrant < Grape::API
       UUID.generate
     end
 
+    def vaction(route)
+      route.route_path.split('/')[2].capitalize
+    end
+
+    def vcmd(route, v, a = [])
+      verb = vaction(route)
+      cmd = Vagrant::Command.const_get(verb).new(a, v)
+    end
+
     def venv(id)
       Vagrant::Environment.new({ :cwd => File.join(boxdir, id) })
     end
@@ -47,7 +56,7 @@ class Fragrant < Grape::API
     delete '/destroy/:id' do
       # TODO: argv --force
       v = venv(params[:id])
-      cmd = Vagrant::Command::Destroy.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
@@ -65,7 +74,7 @@ class Fragrant < Grape::API
     post '/halt/:id' do
       # TODO: argv --force
       v = venv(params[:id])
-      cmd = Vagrant::Command::Halt.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
@@ -75,7 +84,7 @@ class Fragrant < Grape::API
       machine = envrand
       Dir.mkdir(File.join(boxdir, machine), 0755)
       v = venv(machine)
-      cmd = Vagrant::Command::Init.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       machine
     end
@@ -87,7 +96,7 @@ class Fragrant < Grape::API
     end
     post '/provision/:id' do
       v = venv(params[:id])
-      cmd = Vagrant::Command::Provision.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
@@ -100,7 +109,7 @@ class Fragrant < Grape::API
     post '/reload/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
       v = venv(params[:id])
-      cmd = Vagrant::Command::Reload.new([], v)
+      cmd = vmcd(route, v)
       cmd.execute
       params[:id]
     end
@@ -112,7 +121,7 @@ class Fragrant < Grape::API
     end
     post '/resume/:id' do
       v = venv(params[:id])
-      cmd = Vagrant::Command::Resume.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
@@ -134,7 +143,7 @@ class Fragrant < Grape::API
     end
     post '/suspend/:id' do
       v = venv(params[:id])
-      cmd = Vagrant::Command::Suspend.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
@@ -147,7 +156,7 @@ class Fragrant < Grape::API
     post '/up/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
       v = venv(params[:id])
-      cmd = Vagrant::Command::Up.new([], v)
+      cmd = vcmd(route, v)
       cmd.execute
       params[:id]
     end
