@@ -1,4 +1,4 @@
-require "rubygems"
-require "bundler/setup"
-require "./fragrant"
+require 'rubygems'
+require 'bundler/setup'
+require './fragrant'
 run Fragrant

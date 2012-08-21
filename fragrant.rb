@@ -66,7 +66,7 @@ class Fragrant < Grape::API
       envglob
     end
 
-    desc "Halts Vagrant environment"
+    desc "Halts a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -89,7 +89,7 @@ class Fragrant < Grape::API
       machine
     end
 
-    desc "Provisions Vagrant environment"
+    desc "Provisions a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -101,7 +101,7 @@ class Fragrant < Grape::API
       params[:id]
     end
 
-    desc "Reloads Vagrant environment"
+    desc "Reloads a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -114,7 +114,7 @@ class Fragrant < Grape::API
       params[:id]
     end
 
-    desc "Resumes Vagrant environment"
+    desc "Resumes a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -126,7 +126,7 @@ class Fragrant < Grape::API
       params[:id]
     end
 
-    desc "Prints status of Vagrant environment"
+    desc "Prints the status of a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -136,7 +136,7 @@ class Fragrant < Grape::API
       { :state => v.vms[:default].state }
     end
 
-    desc "Suspends Vagrant environment"
+    desc "Suspends a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -148,7 +148,7 @@ class Fragrant < Grape::API
       params[:id]
     end
 
-    desc "Boots Vagrant environment"
+    desc "Boots a Vagrant environment"
     params do
       # TODO: add regex to validate id
       requires :id, :desc => "Vagrant environment id", :type => String
@@ -165,14 +165,16 @@ class Fragrant < Grape::API
 
   resource :vms do
 
-    desc "Lists registered boxes"
+    desc "Lists registered virtual machines"
     get :registered do
-      %x{VBoxManage list vms}
+      out = %x{VBoxManage list vms}
+      out.split('\n')
     end
 
-    desc "Lists running boxes"
+    desc "Lists running virtual machines"
     get :running do
-      %x{VBoxManage list runningvms}
+      out = %x{VBoxManage list runningvms}
+      out.split('\n')
     end
 
   end
