@@ -45,6 +45,7 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String
     end
     delete '/destroy/:id' do
+      # TODO: argv --force
       v = venv(params[:id])
       cmd = Vagrant::Command::Destroy.new([], v)
       cmd.execute
@@ -62,6 +63,7 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String
     end
     post '/halt/:id' do
+      # TODO: argv --force
       v = venv(params[:id])
       cmd = Vagrant::Command::Halt.new([], v)
       cmd.execute
@@ -96,6 +98,7 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String
     end
     post '/reload/:id' do
+      # TODO: argv --[no-]provision, --provision-with x,y,z
       v = venv(params[:id])
       cmd = Vagrant::Command::Reload.new([], v)
       cmd.execute
@@ -142,6 +145,7 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String
     end
     post '/up/:id' do
+      # TODO: argv --[no-]provision, --provision-with x,y,z
       v = venv(params[:id])
       cmd = Vagrant::Command::Up.new([], v)
       cmd.execute
