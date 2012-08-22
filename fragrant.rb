@@ -73,11 +73,23 @@ class Fragrant < Grape::API
     end
 
     desc "Initializes a Vagrant environment"
+    params do
+      optional :vagrantfile, :desc => "Vagrant environment configuration", :type => String
+    end
     post :init do
       machine = env_rand
-      Dir.mkdir(File.join(env_dir, machine), 0755)
-      v = v_env(machine)
-      v.cli(v_action, box_name, box_url)
+      machine_dir = File.join(env_dir, machine)
+      begin
+        Dir.mkdir(machine_dir, 0755)
+      rescue Errno::EEXIST
+        throw :error, :status => 409, :message => "#{machine_dir} already exists!"
+      end
+      if params[:vagrantfile].nil?
+        v = v_env(machine)
+        v.cli(v_action, box_name, box_url)
+      else
+        File.open(File.join(machine_dir, 'Vagrantfile'), 'w') {|f| f.write(params[:vagrantfile])}
+      end
       machine
     end
 
@@ -94,7 +106,7 @@ class Fragrant < Grape::API
     desc "Reloads a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
-      optional :no_provision, :desc 'disable provisioning'
+      optional :no_provision, :desc => 'disable provisioning'
     end
     post '/reload/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
@@ -135,7 +147,7 @@ class Fragrant < Grape::API
     desc "Boots a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
-      optional :no_provision, :desc 'disable provisioning'
+      optional :no_provision, :desc => 'disable provisioning'
     end
     post '/up/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
