@@ -48,10 +48,11 @@ class Fragrant < Grape::API
     desc "Destroys a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :vm_name, :desc => 'single vm to act on'
     end
     delete '/destroy/:id' do
       v = v_env
-      v.cli(v_action, '--force')
+      v.cli(v_action, '--force', params[:vm_name])
       params[:id]
     end
 
@@ -64,11 +65,12 @@ class Fragrant < Grape::API
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
       optional :force, :desc => 'Force shut down (equivalent of pulling power)'
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/halt/:id' do
       force = params[:force] == true ? '--force' : nil
       v = v_env
-      v.cli(v_action, force)
+      v.cli(v_action, force, params[:vm_name])
       params[:id]
     end
 
@@ -96,10 +98,11 @@ class Fragrant < Grape::API
     desc "Provisions a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/provision/:id' do
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, params[:vm_name])
       params[:id]
     end
 
@@ -107,21 +110,23 @@ class Fragrant < Grape::API
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
       optional :no_provision, :desc => 'disable provisioning'
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/reload/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action, provision)
+      v.cli(v_action, provision, params[:vm_name])
       params[:id]
     end
 
     desc "Resumes a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/resume/:id' do
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, params[:vm_name])
       params[:id]
     end
 
@@ -131,16 +136,21 @@ class Fragrant < Grape::API
     end
     get '/status/:id' do
       v = v_env
-      { :state => v.vms[:default].state }
+      state = {}
+      v.vms.each do |vm|
+        state[vm.first] = vm.last.state
+      end
+      state
     end
 
     desc "Suspends a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/suspend/:id' do
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, params[:vm_name])
       params[:id]
     end
 
@@ -148,11 +158,12 @@ class Fragrant < Grape::API
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
       optional :no_provision, :desc => 'disable provisioning'
+      optional :vm_name, :desc => 'single vm to act on'
     end
     post '/up/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action, provision)
+      v.cli(v_action, provision, params[:vm_name])
       params[:id]
     end
 
