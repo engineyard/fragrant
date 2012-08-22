@@ -50,9 +50,8 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     delete '/destroy/:id' do
-      # TODO: argv --force
       v = v_env(params[:id])
-      v.cli(v_action(route))
+      v.cli(v_action(route), '--force')
       params[:id]
     end
 
