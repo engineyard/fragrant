@@ -33,11 +33,11 @@ class Fragrant < Grape::API
       UUID.generate
     end
 
-    def v_action(route)
+    def v_action
       route.route_path.split(/[\/\(]/)[2]
     end
 
-    def v_env(id)
+    def v_env(id = params[:id])
       Vagrant::Environment.new({ :cwd => File.join(env_dir, id) })
     end
 
@@ -50,8 +50,8 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     delete '/destroy/:id' do
-      v = v_env(params[:id])
-      v.cli(v_action(route), '--force')
+      v = v_env
+      v.cli(v_action, '--force')
       params[:id]
     end
 
@@ -66,8 +66,8 @@ class Fragrant < Grape::API
     end
     post '/halt/:id' do
       # TODO: argv --force
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
@@ -76,7 +76,7 @@ class Fragrant < Grape::API
       machine = env_rand
       Dir.mkdir(File.join(env_dir, machine), 0755)
       v = v_env(machine)
-      v.cli(v_action(route), box_name, box_url)
+      v.cli(v_action, box_name, box_url)
       machine
     end
 
@@ -85,8 +85,8 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/provision/:id' do
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
@@ -96,8 +96,8 @@ class Fragrant < Grape::API
     end
     post '/reload/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
@@ -106,8 +106,8 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/resume/:id' do
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
@@ -116,7 +116,7 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     get '/status/:id' do
-      v = v_env(params[:id])
+      v = v_env
       { :state => v.vms[:default].state }
     end
 
@@ -125,8 +125,8 @@ class Fragrant < Grape::API
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/suspend/:id' do
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
@@ -136,8 +136,8 @@ class Fragrant < Grape::API
     end
     post '/up/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
-      v = v_env(params[:id])
-      v.cli(v_action(route))
+      v = v_env
+      v.cli(v_action)
       params[:id]
     end
 
