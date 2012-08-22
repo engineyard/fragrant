@@ -6,42 +6,39 @@ class Fragrant < Grape::API
   version 'v1', :using => :header, :vendor => 'nextgen'
   format :json
 
+  ENV_REGEX = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+
   helpers do
 
-    def boxdir
-      @boxdir ||= File.expand_path(File.join(File.dirname(__FILE__), 'vboxes'))
+    def box_name
+      @box_name ||= 'nextgen64'
     end
 
-    def boxname
-      @boxname ||= 'nextgen64'
+    def box_url
+      @box_url ||= 'http://shunterus.s3.amazonaws.com/nextgen64.box'
     end
 
-    def boxurl
-      @boxurl ||= 'http://shunterus.s3.amazonaws.com/nextgen64.box'
+    def env_dir
+      @env_dir ||= File.expand_path(File.join(File.dirname(__FILE__), 'vboxes'))
     end
 
-    def envglob
-      Dir.entries(boxdir).select do |d|
+    def env_glob
+      Dir.entries(env_dir).select do |d|
         next if d.start_with?('.')
-        File.exists?(File.join(boxdir, d, 'Vagrantfile'))
+        File.exists?(File.join(env_dir, d, 'Vagrantfile'))
       end
     end
 
-    def envrand
+    def env_rand
       UUID.generate
     end
 
-    def vaction(route)
-      route.route_path.split(/[\/\(]/)[2].capitalize
+    def v_action(route)
+      route.route_path.split(/[\/\(]/)[2]
     end
 
-    def vcmd(route, v, a = [])
-      verb = vaction(route)
-      cmd = Vagrant::Command.const_get(verb).new(a, v)
-    end
-
-    def venv(id)
-      Vagrant::Environment.new({ :cwd => File.join(boxdir, id) })
+    def v_env(id)
+      Vagrant::Environment.new({ :cwd => File.join(env_dir, id) })
     end
 
   end
@@ -50,114 +47,98 @@ class Fragrant < Grape::API
 
     desc "Destroys a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     delete '/destroy/:id' do
       # TODO: argv --force
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Lists Vagrant environments"
     get :list do
-      envglob
+      env_glob
     end
 
     desc "Halts a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/halt/:id' do
       # TODO: argv --force
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Initializes a Vagrant environment"
     post :init do
-      machine = envrand
-      Dir.mkdir(File.join(boxdir, machine), 0755)
-      v = venv(machine)
-      cmd = vcmd(route, v, [boxname, boxurl])
-      cmd.execute
+      machine = env_rand
+      Dir.mkdir(File.join(env_dir, machine), 0755)
+      v = v_env(machine)
+      v.cli(v_action(route), box_name, box_url)
       machine
     end
 
     desc "Provisions a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/provision/:id' do
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Reloads a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/reload/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
-      v = venv(params[:id])
-      cmd = vmcd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Resumes a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/resume/:id' do
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Prints the status of a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     get '/status/:id' do
-      v = venv(params[:id])
+      v = v_env(params[:id])
       { :state => v.vms[:default].state }
     end
 
     desc "Suspends a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/suspend/:id' do
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 
     desc "Boots a Vagrant environment"
     params do
-      # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
     end
     post '/up/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
-      v = venv(params[:id])
-      cmd = vcmd(route, v)
-      cmd.execute
+      v = v_env(params[:id])
+      v.cli(v_action(route))
       params[:id]
     end
 

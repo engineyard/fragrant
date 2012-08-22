@@ -19,7 +19,7 @@ describe Fragrant do
     it "returns an array of running vms" do
       get "/vms/running"
       last_response.status.should == 200
-      JSON.parse(last_response.body).should == []
+      JSON.parse(last_response.body).should be_kind_of(Array)
     end
   end
 
