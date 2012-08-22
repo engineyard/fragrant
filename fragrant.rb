@@ -63,11 +63,12 @@ class Fragrant < Grape::API
     desc "Halts a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :force, :desc => 'Force shut down (equivalent of pulling power)'
     end
     post '/halt/:id' do
-      # TODO: argv --force
+      force = params[:force] == true ? '--force' : nil
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, force)
       params[:id]
     end
 
@@ -93,11 +94,12 @@ class Fragrant < Grape::API
     desc "Reloads a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :no_provision, :desc 'disable provisioning'
     end
     post '/reload/:id' do
-      # TODO: argv --[no-]provision, --provision-with x,y,z
+      provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, provision)
       params[:id]
     end
 
@@ -133,11 +135,12 @@ class Fragrant < Grape::API
     desc "Boots a Vagrant environment"
     params do
       requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+      optional :no_provision, :desc 'disable provisioning'
     end
     post '/up/:id' do
-      # TODO: argv --[no-]provision, --provision-with x,y,z
+      provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action)
+      v.cli(v_action, provision)
       params[:id]
     end
 
