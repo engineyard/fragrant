@@ -84,7 +84,7 @@ class Fragrant < Grape::API
       begin
         Dir.mkdir(machine_dir, 0755)
       rescue Errno::EEXIST
-        throw :error, :status => 409, :message => "#{machine_dir} already exists!"
+        error!({ "error" => "#{machine_dir} already exists!" }, 409)
       end
       if params[:vagrantfile].nil?
         v_env(machine).cli(v_action, box_name, box_url)
@@ -102,6 +102,20 @@ class Fragrant < Grape::API
     post '/provision/:id' do
       args = [v_action, params[:vm_name]]
       v_env.cli(args.compact)
+      params[:id]
+    end
+
+    desc "Purges a Vagrant environment"
+    params do
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: ENV_REGEX
+    end
+    post '/purge/:id' do
+      if v_env.vms.all? {|vm| vm.last.state == 'not_created'}
+        machine_dir = File.join(env_dir, params[:id])
+        FileUtils.remove_entry_secure(machine_dir)
+      else
+        error!({ "error" => "Environment contains undestroyed machines!" }, 409)
+      end
       params[:id]
     end
 
