@@ -32,7 +32,7 @@ class Fragrant < Grape::API
     end
 
     def vaction(route)
-      route.route_path.split('/')[2].capitalize
+      route.route_path.split(/[\/\(]/)[2].capitalize
     end
 
     def vcmd(route, v, a = [])
@@ -51,7 +51,7 @@ class Fragrant < Grape::API
     desc "Destroys a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     delete '/destroy/:id' do
       # TODO: argv --force
@@ -69,7 +69,7 @@ class Fragrant < Grape::API
     desc "Halts a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/halt/:id' do
       # TODO: argv --force
@@ -84,7 +84,7 @@ class Fragrant < Grape::API
       machine = envrand
       Dir.mkdir(File.join(boxdir, machine), 0755)
       v = venv(machine)
-      cmd = vcmd(route, v)
+      cmd = vcmd(route, v, [boxname, boxurl])
       cmd.execute
       machine
     end
@@ -92,7 +92,7 @@ class Fragrant < Grape::API
     desc "Provisions a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/provision/:id' do
       v = venv(params[:id])
@@ -104,7 +104,7 @@ class Fragrant < Grape::API
     desc "Reloads a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/reload/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
@@ -117,7 +117,7 @@ class Fragrant < Grape::API
     desc "Resumes a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/resume/:id' do
       v = venv(params[:id])
@@ -129,7 +129,7 @@ class Fragrant < Grape::API
     desc "Prints the status of a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     get '/status/:id' do
       v = venv(params[:id])
@@ -139,7 +139,7 @@ class Fragrant < Grape::API
     desc "Suspends a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/suspend/:id' do
       v = venv(params[:id])
@@ -151,7 +151,7 @@ class Fragrant < Grape::API
     desc "Boots a Vagrant environment"
     params do
       # TODO: add regex to validate id
-      requires :id, :desc => "Vagrant environment id", :type => String
+      requires :id, :desc => "Vagrant environment id", :type => String, regexp: /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
     end
     post '/up/:id' do
       # TODO: argv --[no-]provision, --provision-with x,y,z
