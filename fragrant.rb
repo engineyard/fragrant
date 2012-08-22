@@ -52,7 +52,8 @@ class Fragrant < Grape::API
     end
     delete '/destroy/:id' do
       v = v_env
-      v.cli(v_action, '--force', params[:vm_name])
+      args = [v_action, params[:vm_name], '--force']
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -70,7 +71,8 @@ class Fragrant < Grape::API
     post '/halt/:id' do
       force = params[:force] == true ? '--force' : nil
       v = v_env
-      v.cli(v_action, force, params[:vm_name])
+      args = [v_action, params[:vm_name], force]
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -102,7 +104,8 @@ class Fragrant < Grape::API
     end
     post '/provision/:id' do
       v = v_env
-      v.cli(v_action, params[:vm_name])
+      args = [v_action, params[:vm_name]]
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -115,7 +118,8 @@ class Fragrant < Grape::API
     post '/reload/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action, provision, params[:vm_name])
+      args = [v_action, params[:vm_name], provision]
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -126,7 +130,8 @@ class Fragrant < Grape::API
     end
     post '/resume/:id' do
       v = v_env
-      v.cli(v_action, params[:vm_name])
+      args = [v_action, params[:vm_name]]
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -150,7 +155,8 @@ class Fragrant < Grape::API
     end
     post '/suspend/:id' do
       v = v_env
-      v.cli(v_action, params[:vm_name])
+      args = [v_action, params[:vm_name]]
+      v.cli(args.compact)
       params[:id]
     end
 
@@ -163,7 +169,8 @@ class Fragrant < Grape::API
     post '/up/:id' do
       provision = params[:no_provision] == true ? '--no-provision' : '--provision'
       v = v_env
-      v.cli(v_action, provision, params[:vm_name])
+      args = [v_action, params[:vm_name], provision]
+      v.cli(args.compact)
       params[:id]
     end
 
