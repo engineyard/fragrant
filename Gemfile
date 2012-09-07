@@ -6,9 +6,11 @@ gem 'vagrant'
 
 group :development do
   gem 'shotgun'
+  gem 'rake'
 end
 
 group :test do
   gem 'rack-test'
   gem 'rspec'
+  gem 'rake'
 end
