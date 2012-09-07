@@ -4,7 +4,7 @@ describe Fragrant do
   include Rack::Test::Methods
 
   def app
-    Fragrant
+    Fragrant::Frontend
   end
 
   describe "GET /vms/registered" do
