@@ -1,0 +1,19 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Generated with Fragrant. Mmm... tasty.
+Vagrant::Config.run do |config|
+  config.vm.box = "<%= box_name %>"
+
+  # The url from where the 'config.vm.box' box will be fetched if it
+  # doesn't already exist on the user's system.
+  <% if box_url.nil? %># <% end %>config.vm.box_url = "<%= box_url || "http://domain.com/path/to/above.box" %>"
+
+  <% addresses.each do |address| %>
+  config.vm.network :hostonly, "<%= address %>"
+  <% end %>
+
+  <% provision_script_paths.each do |path| %>
+  config.vm.provision :shell, :path => "<%= path %>"
+  <% end %>
+end
