@@ -1,11 +1,17 @@
 require 'grape'
 require 'uuid'
 require 'vagrant'
-require File.expand_path(File.join(File.dirname(__FILE__), 'lib', 'vagrantfile_generator'))
+$LOAD_PATH << File.expand_path("../lib", __FILE__)
+require 'vagrantfile_generator'
+require 'address_manager'
 
 module Fragrant
   def self.env_dir
-    @env_dir ||= File.expand_path(File.join(File.dirname(__FILE__), 'vboxes'))
+    @env_dir ||= File.expand_path("../vboxes", __FILE__)
+  end
+
+  def self.address_manager
+    @address_manager ||= AddressManager.new
   end
 
   class Frontend < Grape::API
@@ -46,7 +52,6 @@ module Fragrant
       def v_env(id = params[:id])
         Vagrant::Environment.new({ :cwd => File.join(env_dir, id) })
       end
-
     end
 
     resource :environments do
@@ -109,6 +114,36 @@ module Fragrant
         args = [v_action, params[:vm_name]]
         v_env.cli(args.compact)
         params[:id]
+      end
+
+      desc "Initialize and provision an environment, returns the environment id"
+      params do
+        optional :box_url, :desc => 'URL for box location, optional iff \'box_name\' exists', :type => String
+        requires :box_name, :desc => 'Name for box, used to lookup already loaded box', :type => String, :regexp => /^[\w_-]+$/
+        optional :user_data_script, :desc => 'Script to invoke upon provisioning'
+      end
+      post :create do
+        # TODO
+      end
+
+      desc "Initializes a Vagrant environment"
+      params do
+        optional :vagrantfile, :desc => "Vagrant environment configuration", :type => String
+      end
+      post :init do
+        machine = env_rand
+        machine_dir = File.join(env_dir, machine)
+        begin
+          Dir.mkdir(machine_dir, 0755)
+        rescue Errno::EEXIST
+          error!({ "error" => "#{machine_dir} already exists!" }, 409)
+        end
+        if params[:vagrantfile].nil?
+          v_env(machine).cli(v_action, box_name, box_url)
+        else
+          File.open(File.join(machine_dir, 'Vagrantfile'), 'w') {|f| f.write(params[:vagrantfile])}
+        end
+        machine
       end
 
       desc "Purges a Vagrant environment"

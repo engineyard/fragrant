@@ -6,6 +6,10 @@ module Fragrant
 
     attr_accessor :addresses
 
+    def self.template_path
+      File.expand_path(File.join(File.dirname(__FILE__), '..', 'templates', 'Vagrantfile'))
+    end
+
     def initialize(target_directory, opts={})
       @target_directory = target_directory
       @scripts          = []
@@ -33,10 +37,6 @@ module Fragrant
         retval[sprintf("script%03d", i + 1)] = contents
       end
       retval
-    end
-
-    def self.template_path
-      File.expand_path(File.join(File.dirname(__FILE__), '..', 'templates', 'Vagrantfile'))
     end
 
     def write
