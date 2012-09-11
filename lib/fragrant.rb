@@ -3,9 +3,8 @@ require 'thread'
 require 'fileutils'
 require 'uuid'
 require 'vagrant'
-$LOAD_PATH << File.expand_path("../lib", __FILE__)
-require 'vagrantfile_generator'
-require 'address_manager'
+require 'fragrant/vagrantfile_generator'
+require 'fragrant/address_manager'
 
 module Fragrant
   def self.env_dir
@@ -22,13 +21,18 @@ module Fragrant
     @address_manager ||= AddressManager.new(data_location, range)
   end
 
+  def self.add_task(task)
+    background_worker
+    tasks.push(task)
+  end
+
   # Tasks are two-element Arrays of a machine id and a set of vagrant args
   def self.tasks
     @tasks ||= Queue.new
   end
 
-  def self.background_worker
-    @background_worker ||= Thread.new do
+  def self.create_worker_thread
+    thread = Thread.new do
       Thread.current.abort_on_exception = true
       until Thread.current[:shutdown] do
         unless Fragrant.tasks.empty?
@@ -38,10 +42,21 @@ module Fragrant
         end
       end
     end
+
+    at_exit do
+      $stderr.puts "Waiting for any running Vagrant tasks to complete."
+      thread[:shutdown] = true
+      thread.join
+    end
+    thread
+  end
+
+  def self.background_worker
+    @background_worker ||= create_worker_thread
   end
 
   class Frontend < Grape::API
-    version 'v1', :using => :header, :vendor => 'nextgen'
+    version 'v1', :using => :header, :vendor => 'fragrant'
     format :json
 
     ENV_REGEX = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
@@ -51,13 +66,16 @@ module Fragrant
     end
 
     helpers do
+      def add_task(task)
+        Fragrant.add_task(task)
+      end
 
       def box_name
-        params[:box_name] || 'nextgen64'
+        params[:box_name] || 'precise32'
       end
 
       def box_url
-        params[:box_url] || 'http://shunterus.s3.amazonaws.com/nextgen64.box'
+        params[:box_url] || "http://files.vagrantup.com/precise32.box"
       end
 
       def user_script
@@ -110,6 +128,10 @@ module Fragrant
         end
         machine_dir
       end
+    end
+
+    get '/' do
+      {}
     end
 
     resource :environments do
@@ -185,7 +207,7 @@ module Fragrant
         machine_dir = make_machine_dir(machine_id)
         addresses = v_file machine_id, machine_dir
         args = 'up', '--provision'
-        Fragrant.tasks.push(:id => machine_id, :args => args)
+        add_task(:id => machine_id, :args => args)
         {:id => machine_id, :ips => addresses}
       end
 

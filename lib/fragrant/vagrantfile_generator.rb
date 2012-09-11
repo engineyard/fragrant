@@ -20,11 +20,11 @@ module Fragrant
     end
 
     def box_name
-      @box_name || "base32"
+      @box_name || "precise32"
     end
 
     def box_url
-      @box_url || "http://example.com/base32.box"
+      @box_url || "http://files.vagrantup.com/precise32.box"
     end
 
     def add_script(contents)
