@@ -8,9 +8,9 @@ module Fragrant
     attr_accessor :data_location, :allocated_addresses
     attr_accessor :address_range, :address_map
 
-    def initialize(data_location = nil, address_range = "172.24.24.128/25")
-      self.data_location = data_location || File.join(Fragrant.env_dir, "addresses.json")
-      self.address_range = address_range.to_s
+    def initialize(data_location, address_range)
+      self.data_location = data_location
+      self.address_range = address_range
       self.address_map = {}
       self.allocated_addresses = []
       load_address_data

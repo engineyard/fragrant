@@ -1,4 +1,6 @@
 require 'grape'
+require 'thread'
+require 'fileutils'
 require 'uuid'
 require 'vagrant'
 $LOAD_PATH << File.expand_path("../lib", __FILE__)
@@ -7,11 +9,35 @@ require 'address_manager'
 
 module Fragrant
   def self.env_dir
-    @env_dir ||= File.expand_path("../vboxes", __FILE__)
+    @env_dir ||= begin
+                   dir = ENV["FRAGRANT_ENV_DIR"] || File.expand_path("~/.fragrant")
+                   FileUtils.mkdir_p(dir)
+                   dir
+                 end
   end
 
   def self.address_manager
-    @address_manager ||= AddressManager.new
+    data_location = File.join(Fragrant.env_dir, "addresses.json")
+    range = ENV["FRAGRANT_IP_RANGE"] || "172.24.24.128/25"
+    @address_manager ||= AddressManager.new(data_location, range)
+  end
+
+  # Tasks are two-element Arrays of a machine id and a set of vagrant args
+  def self.tasks
+    @tasks ||= Queue.new
+  end
+
+  def self.background_worker
+    @background_worker ||= Thread.new do
+      Thread.current.abort_on_exception = true
+      until Thread.current[:shutdown] do
+        unless Fragrant.tasks.empty?
+          task = Fragrant.tasks.pop
+          env = Vagrant::Environment.new({ :cwd => File.join(env_dir, task[:id]) })
+          env.cli(task[:args])
+        end
+      end
+    end
   end
 
   class Frontend < Grape::API
@@ -20,14 +46,22 @@ module Fragrant
 
     ENV_REGEX = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/
 
+    rescue_from :all do |e|
+      rack_response({ :message => "Encountered exception: #{e}", :backtrace => e.backtrace }, 500, {"Content-Type" => "application/json"})
+    end
+
     helpers do
 
       def box_name
-        @box_name ||= 'nextgen64'
+        params[:box_name] || 'nextgen64'
       end
 
       def box_url
-        @box_url ||= 'http://shunterus.s3.amazonaws.com/nextgen64.box'
+        params[:box_url] || 'http://shunterus.s3.amazonaws.com/nextgen64.box'
+      end
+
+      def user_script
+        params[:user_data_script]
       end
 
       def env_dir
@@ -52,6 +86,30 @@ module Fragrant
       def v_env(id = params[:id])
         Vagrant::Environment.new({ :cwd => File.join(env_dir, id) })
       end
+
+      def allocate_address(env_id)
+        Fragrant.address_manager.claim_address(env_id)
+      end
+
+      def v_file(env_id, directory, contents = nil)
+        addresses = [allocate_address(env_id)] unless contents
+        VagrantfileGenerator.new(directory, :box_name => box_name,
+                                            :box_url => box_url,
+                                            :scripts => Array(user_script),
+                                            :addresses => addresses,
+                                            :contents => contents).write
+        Array(addresses)
+      end
+
+      def make_machine_dir(machine_id)
+        machine_dir = File.join(env_dir, machine_id)
+        begin
+          Dir.mkdir(machine_dir, 0755)
+        rescue Errno::EEXIST
+          error!({ "error" => "#{machine_dir} already exists!" }, 409)
+        end
+        machine_dir
+      end
     end
 
     resource :environments do
@@ -64,7 +122,7 @@ module Fragrant
       delete '/destroy/:id' do
         args = [v_action, params[:vm_name], '--force']
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Lists Vagrant environments"
@@ -82,7 +140,7 @@ module Fragrant
         force = params[:force] == true ? '--force' : nil
         args = [v_action, params[:vm_name], force]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Initializes a Vagrant environment"
@@ -102,7 +160,7 @@ module Fragrant
         else
           File.open(File.join(machine_dir, 'Vagrantfile'), 'w') {|f| f.write(params[:vagrantfile])}
         end
-        machine
+        {:id => machine}
       end
 
       desc "Provisions a Vagrant environment"
@@ -113,17 +171,22 @@ module Fragrant
       post '/provision/:id' do
         args = [v_action, params[:vm_name]]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Initialize and provision an environment, returns the environment id"
       params do
-        optional :box_url, :desc => 'URL for box location, optional iff \'box_name\' exists', :type => String
         requires :box_name, :desc => 'Name for box, used to lookup already loaded box', :type => String, :regexp => /^[\w_-]+$/
+        optional :box_url, :desc => 'URL for box location, optional iff \'box_name\' exists', :type => String
         optional :user_data_script, :desc => 'Script to invoke upon provisioning'
       end
       post :create do
-        # TODO
+        machine_id = env_rand
+        machine_dir = make_machine_dir(machine_id)
+        addresses = v_file machine_id, machine_dir
+        args = 'up', '--provision'
+        Fragrant.tasks.push(:id => machine_id, :args => args)
+        {:id => machine_id, :ips => addresses}
       end
 
       desc "Initializes a Vagrant environment"
@@ -131,19 +194,14 @@ module Fragrant
         optional :vagrantfile, :desc => "Vagrant environment configuration", :type => String
       end
       post :init do
-        machine = env_rand
-        machine_dir = File.join(env_dir, machine)
-        begin
-          Dir.mkdir(machine_dir, 0755)
-        rescue Errno::EEXIST
-          error!({ "error" => "#{machine_dir} already exists!" }, 409)
-        end
+        machine_id = env_rand
+        machine_dir = make_machine_dir(machine_id)
         if params[:vagrantfile].nil?
-          v_env(machine).cli(v_action, box_name, box_url)
+          v_env(machine_id).cli(v_action, box_name, box_url)
         else
-          File.open(File.join(machine_dir, 'Vagrantfile'), 'w') {|f| f.write(params[:vagrantfile])}
+          v_file(machine_id, machine_dir, params[:vagrantfile])
         end
-        machine
+        {:id => machine_id}
       end
 
       desc "Purges a Vagrant environment"
@@ -157,7 +215,7 @@ module Fragrant
         else
           error!({ "error" => "Environment contains undestroyed machines!" }, 409)
         end
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Reloads a Vagrant environment"
@@ -170,7 +228,7 @@ module Fragrant
         provision = params[:no_provision] == true ? '--no-provision' : '--provision'
         args = [v_action, params[:vm_name], provision]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Resumes a Vagrant environment"
@@ -181,7 +239,7 @@ module Fragrant
       post '/resume/:id' do
         args = [v_action, params[:vm_name]]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Prints the status of a Vagrant environment"
@@ -193,7 +251,7 @@ module Fragrant
         v_env.vms.each do |vm|
           state[vm.first] = vm.last.state
         end
-        state
+        {:status => state}
       end
 
       desc "Suspends a Vagrant environment"
@@ -204,7 +262,7 @@ module Fragrant
       post '/suspend/:id' do
         args = [v_action, params[:vm_name]]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
       desc "Boots a Vagrant environment"
@@ -217,7 +275,7 @@ module Fragrant
         provision = params[:no_provision] == true ? '--no-provision' : '--provision'
         args = [v_action, params[:vm_name], provision]
         v_env.cli(args.compact)
-        params[:id]
+        {:id => params[:id]}
       end
 
     end
@@ -227,13 +285,13 @@ module Fragrant
       desc "Lists registered virtual machines"
       get :registered do
         out = %x{VBoxManage list vms}
-        out.split('\n')
+        {:vms => out.split('\n')}
       end
 
       desc "Lists running virtual machines"
       get :running do
         out = %x{VBoxManage list runningvms}
-        out.split('\n')
+        {:vms => out.split('\n')}
       end
 
     end
