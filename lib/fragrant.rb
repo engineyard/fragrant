@@ -1,3 +1,5 @@
+vendor_dir = File.expand_path('../../vendor', __FILE__)
+$LOAD_PATH.unshift File.join(vendor_dir, 'grape', 'lib')
 require 'grape'
 require 'thread'
 require 'fileutils'
@@ -130,7 +132,7 @@ module Fragrant
       end
     end
 
-    get '/' do
+    get do
       {}
     end
 
