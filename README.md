@@ -4,3 +4,5 @@
   - Quick
 * Base notes
   - Dirty
+* Documentation
+  - Turn this file into something delightful
