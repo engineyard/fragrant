@@ -7,7 +7,7 @@ module Fragrant
     attr_accessor :addresses
 
     def self.template_path
-      File.expand_path('../../templates/Vagrantfile', __FILE__)
+      File.expand_path('../../../templates/Vagrantfile', __FILE__)
     end
 
     def initialize(target_directory, opts={})
