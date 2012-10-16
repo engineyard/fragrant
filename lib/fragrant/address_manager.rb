@@ -62,18 +62,14 @@ module Fragrant
       address
     end
 
-    def release_address(environment_id, ip)
+    def release_addresses(environment_id)
       unless address_map.key?(environment_id)
         raise "No addresses registered to environment #{environment_id}"
       end
 
       address = address_map[environment_id]
-      unless address == ip
-        raise "IP #{ip} is not currently assigned to environment #{environment_id} (#{address} is)"
-      end
-
+      allocated_addresses.delete address
       address_map.delete environment_id
-      allocated_addresses.delete ip
       persist
     end
   end
