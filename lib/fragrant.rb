@@ -37,11 +37,9 @@ module Fragrant
     thread = Thread.new do
       Thread.current.abort_on_exception = true
       until Thread.current[:shutdown] do
-        unless Fragrant.tasks.empty?
-          task = Fragrant.tasks.pop
-          env = Vagrant::Environment.new({ :cwd => File.join(env_dir, task[:id]) })
-          env.cli(task[:args])
-        end
+        task = Fragrant.tasks.pop
+        env = Vagrant::Environment.new({ :cwd => File.join(env_dir, task[:id]) })
+        env.cli(task[:args])
       end
     end
 
