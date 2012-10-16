@@ -34,27 +34,49 @@ module Fragrant
   end
 
   def self.create_worker_thread
+    $stderr.puts "Launching background worker"
     thread = Thread.new do
       Thread.current.abort_on_exception = true
-      until Thread.current[:shutdown] do
-        unless Fragrant.tasks.empty?
-          task = Fragrant.tasks.pop
-          env = Vagrant::Environment.new({ :cwd => File.join(env_dir, task[:id]) })
-          env.cli(task[:args])
-        end
+      loop do
+        break if Thread.current[:shutdown]
+        break if Fragrant.tasks.empty?
+        task = Fragrant.tasks.pop
+        start_time = Time.now
+        $stderr.puts "Running background task #{task.inspect}"
+        env = Vagrant::Environment.new({ :cwd => File.join(env_dir, task[:id]) })
+        env.cli(task[:args])
+        elapsed = Time.now - start_time
+        $stderr.puts "Completed background task #{task.inspect} in #{'%.2f' % elapsed} seconds"
       end
-    end
-
-    at_exit do
-      $stderr.puts "Waiting for any running Vagrant tasks to complete."
-      thread[:shutdown] = true
-      thread.join
+      # Stop this thread when there is no work left to do.
+      $stderr.puts "Terminating background worker"
+      $stderr.flush
+      Fragrant.background_worker = nil
+      Thread.current.terminate
     end
     thread
   end
 
+  # Registers an at_exit hook the first time it is called in a process.
+  def self.install_exit_hook
+    @exit_hook ||= at_exit do
+      $stderr.puts "Waiting for any running Vagrant tasks to complete."
+      if @background_worker
+        @background_worker[:shutdown] = true
+        @background_worker.join
+      end
+    end
+  end
+
   def self.background_worker
-    @background_worker ||= create_worker_thread
+    @background_worker ||= begin
+                             install_exit_hook
+                             create_worker_thread
+                           end
+  end
+
+  def self.background_worker=(val)
+    @background_worker = val
   end
 
   class Frontend < Grape::API
@@ -69,6 +91,7 @@ module Fragrant
 
     helpers do
       def add_task(task)
+        $stderr.puts "Adding background task: #{task.inspect}"
         Fragrant.add_task(task)
       end
 
@@ -111,6 +134,12 @@ module Fragrant
         Fragrant.address_manager.claim_address(env_id)
       end
 
+      def deallocate_address(env_id)
+        if Fragrant.address_manager.address_map.key?(env_id)
+          Fragrant.address_manager.release_addresses(env_id)
+        end
+      end
+
       def v_file(env_id, directory, contents = nil)
         addresses = [allocate_address(env_id)] unless contents
         VagrantfileGenerator.new(directory, :box_name => box_name,
@@ -146,6 +175,7 @@ module Fragrant
       delete '/destroy/:id' do
         args = [v_action, params[:vm_name], '--force']
         v_env.cli(args.compact)
+        deallocate_address(params[:id])
         {:id => params[:id]}
       end
 
@@ -239,6 +269,7 @@ module Fragrant
         else
           error!({ "error" => "Environment contains undestroyed machines!" }, 409)
         end
+        deallocate_address(params[:id])
         {:id => params[:id]}
       end
 
