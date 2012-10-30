@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name        = 'fragrant'
-  s.version     = "0.0.4"
+  s.version     = "0.0.5"
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Matt Whiteley']
   s.email       = ['mwhiteley@engineyard.com']
