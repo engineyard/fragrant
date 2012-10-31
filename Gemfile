@@ -1,6 +1,5 @@
 source 'https://rubygems.org'
 gemspec
-gem 'grape', '~> 0.2.2'
 
 group :development do
   gem 'rake'

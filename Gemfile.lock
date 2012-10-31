@@ -2,12 +2,11 @@ PATH
   remote: .
   specs:
     fragrant (0.0.5)
-      grape (~> 0.2.1)
+      grape (~> 0.2.2)
       puma
       uuid
       vagrant
       vegas
-      virtus
 
 GEM
   remote: https://rubygems.org/
@@ -82,7 +81,6 @@ PLATFORMS
 
 DEPENDENCIES
   fragrant!
-  grape (~> 0.2.2)
   rack-test
   rake
   rspec

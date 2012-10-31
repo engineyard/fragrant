@@ -16,8 +16,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'uuid'
   s.add_dependency 'puma'
   s.add_dependency 'vegas'
-  s.add_dependency 'grape', "~> 0.2.1" # vendorized, though
-  s.add_dependency 'virtus' # vendorized grape requires this, released 0.2.1 does not yet
+  s.add_dependency 'grape', "~> 0.2.2"
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'rake'
