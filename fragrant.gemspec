@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name        = 'fragrant'
-  s.version     = "0.0.5"
+  s.version     = "0.0.6"
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Matt Whiteley']
   s.email       = ['mwhiteley@engineyard.com']
@@ -24,6 +24,6 @@ Gem::Specification.new do |s|
 
   s.require_path = 'lib'
   s.executables  = ['fragrant']
-  s.files        = Dir.glob('{bin,lib,vendor,templates}/**/*') + %w(LICENSE README.md)
+  s.files        = Dir.glob('{bin,lib,templates}/**/*') + %w(LICENSE README.md)
   s.test_files   = Dir.glob('{spec}/**/*') + %w(Rakefile Gemfile Gemfile.lock)
 end
